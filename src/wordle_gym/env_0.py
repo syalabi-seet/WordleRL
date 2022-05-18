@@ -16,7 +16,7 @@ class EnvironmentConfig:
     N_ROUNDS: int = 6
     WORD_LENGTH: int = 5
     STATE_LENGTH: int = 32
-    GAMMA: float = 0.9
+    GAMMA: float = 0.8
     corpus_path: str = "src/wordle_gym/corpus.txt"
     solution_path: str = "src/wordle_gym/possible_solutions.txt"
     state_path: str = "src/wordle_gym/state_dict_0.json"
@@ -59,7 +59,7 @@ class Wordle(gym.Env):
         alphabet_high = np.repeat(1, self.config.N_ALPHABETS)
         position_high = np.repeat(
             len(self.statekey_dict)+1, self.config.WORD_LENGTH)
-        round_high = self.config.N_ROUNDS + 1
+        round_high = self.config.N_ROUNDS
 
         board_low = np.zeros(self.config.STATE_LENGTH, dtype=np.float32)
         board_high = np.concatenate(
@@ -97,7 +97,6 @@ class Wordle(gym.Env):
         return position_state
 
     def get_discount_rate(self):
-        discount_rate = self.config.GAMMA ** (self.game_state['board'][-1])
         if self.game_state['board'][-1] == 0:
             discount_rate = 1.0
         elif self.game_state['board'][-1] == 1:
@@ -178,11 +177,12 @@ class Wordle(gym.Env):
 
         self.game_state['board'][-1] += 1
 
-        if (self.game_state['board'][-1] == self.config.N_ROUNDS + 1) or \
+        if (self.game_state['board'][-1] == self.config.N_ROUNDS) or \
              (self.guess_word == self.hidden_word): # check if round = 6, end early
             done = True
 
         self.game_state['mask'] = self.update_mask(self.game_state)
+
         return self.game_state, self.rewards, done, self.get_info()
 
     def render(self, current_state):

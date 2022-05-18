@@ -15,17 +15,12 @@ import tensorflow as tf
 from tf_agents.environments import suite_gym, TFPyEnvironment
 from tf_agents.networks.q_network import QNetwork
 from tf_agents.agents.dqn.dqn_agent import DdqnAgent
-from tf_agents.networks import Network
-from tf_agents.networks.encoding_network import EncodingNetwork
-from tf_agents.policies.q_policy import QPolicy
-from tf_agents.distributions.masked import MaskedCategorical
 
 from tf_agents.replay_buffers.tf_uniform_replay_buffer import TFUniformReplayBuffer
 from tf_agents.trajectories import trajectory
 
 from tf_agents.utils import common
 from tf_agents.policies import PolicySaver
-from tf_agents.specs import BoundedTensorSpec
 
 tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 
@@ -46,7 +41,6 @@ class AgentConfig:
     EVAL_EPISODES: int = int(1e3)
     fc_layer_params: tuple = (512, 512)
     EPSILON: float = 0.1
-    REWARD_SCALE_FACTOR: float = 0.9
     mode: str = 'easy'
     dir: str = os.path.join('src', 'wordle_agent')
     ckpt_dir: str = os.path.join(dir, 'checkpoint')
@@ -109,6 +103,7 @@ class WordleAgent:
         q_net = QNetwork(
             self.train_env.observation_spec()['board'],
             self.train_env.action_spec(),
+            preprocessing_layers=tf.keras.layers.Normalization(),
             fc_layer_params=self.config.fc_layer_params)
 
         optimizer = tf.keras.optimizers.Adam(
@@ -120,7 +115,6 @@ class WordleAgent:
             q_network=q_net,
             epsilon_greedy=self.config.EPSILON,
             optimizer=optimizer,
-            reward_scale_factor=self.config.REWARD_SCALE_FACTOR,
             observation_and_action_constraint_splitter=self.splitter_fn,
             train_step_counter=self.step_counter)
 
@@ -144,7 +138,7 @@ class WordleAgent:
             game_state = self.env.decode_position_state(observation_state)
             game_state = [int(s.split("|")[1]) for s in game_state]
             correct_positions = len([i for i in game_state if i == 2]) / 5
-            round = observation_state[-1] - 1
+            round = observation_state[-1]
                     
             if correct_positions == 1.:
                 wins += 1
