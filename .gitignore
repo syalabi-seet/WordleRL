@@ -1,3 +1,5 @@
 report_items/
+misc/
 docker_setup.txt
-src/wordle_agent/checkpoint/
+src/wordle_agent/checkpoint/*
+src/*/__pycache__/
